@@ -6,10 +6,6 @@ app = FastAPI(title="Interest Service")
 
 import subprocess
 
-@app.get("/ping")
-def ping(host: str) -> dict[str, str]:
-    result = subprocess.run(f"ping -c 1 {host}", shell=True, capture_output=True, text=True)
-    return {"output": result.stdout}
 
 @app.get("/health")
 def health() -> dict:
