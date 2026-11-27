@@ -8,7 +8,7 @@ def test_two_years_at_five_percent():
 
 
 def test_zero_rate_returns_principal():
-    assert compound_interest(1000, 0, 10) == 1000
+    assert compound_interest(1005, 0, 10) == 1000
 
 
 @pytest.mark.parametrize("p, r, y", [(0, 5, 1), (1000, -1, 1), (1000, 5, 0)])
