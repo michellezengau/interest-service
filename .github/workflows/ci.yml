@@ -1,12 +1,12 @@
 name: CI
 
 on:
-  pull_request:            # run on every PR: the gate before merge
+  pull_request:
   push:
-    branches: [main]       # run again after merge, to prove main is green
+    branches: [main]
 
 permissions:
-  contents: read           # least privilege for GITHUB_TOKEN
+  contents: read
 
 jobs:
   lint:
@@ -21,21 +21,39 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      - run: python -m mypy app            # NEW: type checking
 
   test:
-    needs: lint            # only run tests if lint passes (fail fast)
+    needs: lint
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false                     # let every version finish, even if one fails
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: python -m pip install -r requirements-dev.txt
-      - run: python -m pytest -v --junitxml=reports/junit.xml
+      - run: python -m pytest --junitxml=reports/junit.xml   # coverage gate comes from pyproject.toml
       - uses: actions/upload-artifact@v4
-        if: always()       # upload the report even when tests fail
+        if: always()
         with:
-          name: test-report
+          name: test-report-${{ matrix.python-version }}     # artifact names must be unique
           path: reports/
+
+  # One stable check for the ruleset to require (see Experiment C)
+  ci-passed:
+    if: always()                           # run even when earlier jobs fail or are skipped
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every job succeeded
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" == "true" ]]; then
+            echo "One or more required jobs did not succeed"
+            exit 1
+          fi

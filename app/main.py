@@ -4,6 +4,8 @@ from app.calculator import compound_interest
 
 app = FastAPI(title="Interest Service")
 
+"""test"""
+
 
 @app.get("/health")
 def health() -> dict:
