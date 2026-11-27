@@ -1,0 +1,8 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "--cov=app --cov-branch --cov-report=term-missing --cov-fail-under=90"
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true   # every function must have type hints
+warn_return_any = true
