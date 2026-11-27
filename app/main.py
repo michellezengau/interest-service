@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 
 from app.calculator import compound_interest
