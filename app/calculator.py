@@ -13,4 +13,4 @@ def compound_interest(principal: float, annual_rate_pct: float, years: int) -> f
 def format_total(total: float) -> str:
     if total > 1_000_000:
         return f"${total / 1_000_000:.1f}M"
-    return f"${total:,.2f}"    # bug: returns a float, not a string
+    return f"${total:,.2f}"  # bug: returns a float, not a string
