@@ -3,7 +3,7 @@ def compound_interest(principal: float, annual_rate_pct: float, years: int) -> f
     if principal <= 0:
         raise ValueError("principal must be positive")
     if annual_rate_pct < 0:
-        raise ValueError("rate cannot be negative")
+        raise ValueError("rate cannot be negative  ")
     if years <= 0:
         raise ValueError("years must be positive")
     total = principal * (1 + annual_rate_pct / 100) ** years
