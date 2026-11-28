@@ -4,8 +4,6 @@ from app.calculator import compound_interest
 
 app = FastAPI(title="Interest Service")
 
-"""test"""
-
 
 @app.get("/health")
 def health() -> dict:
@@ -17,5 +15,5 @@ def interest(principal: float, rate: float, years: int) -> dict:
     try:
         total = compound_interest(principal, rate, years)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return {"total": total}

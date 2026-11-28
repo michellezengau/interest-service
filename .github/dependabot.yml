@@ -1,0 +1,49 @@
+version: 2
+
+updates:
+  # Python dependencies (understands pip-compile: updates the .in/.txt pair, hashes included)
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 5          # wait 5 days after a release before proposing it
+    groups:
+      python-minor-and-patch:  # one PR for all small updates instead of one each
+        update-types: [minor, patch]
+    labels: [dependencies, python]
+    commit-message:
+      prefix: "deps(pip)"
+
+  # GitHub Actions (updates the pinned SHA and the "# vX.Y.Z" comment together)
+  - package-ecosystem: github-actions
+    directory: "/"             # "/" means .github/workflows/
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
+    cooldown:
+      default-days: 5
+    groups:
+      actions:
+        patterns: ["*"]        # all action updates in a single PR
+    labels: [dependencies, github-actions]
+    commit-message:
+      prefix: "deps(actions)"
+
+  # Docker base image (updates the pinned @sha256 digest in the Dockerfile)
+  - package-ecosystem: docker
+    directory: "/"             # where the Dockerfile is
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Australia/Sydney
+    labels: [dependencies, docker]
+    commit-message:
+      prefix: "deps(docker)"
