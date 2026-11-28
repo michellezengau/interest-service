@@ -6,8 +6,8 @@ app = FastAPI(title="Interest Service")
 
 
 @app.get("/health")
-def health() -> dict:
-    return {"status": "ok"}
+def health() -> dict[str, str]:
+    return {"status": "ok", "version": "2"}
 
 
 @app.get("/interest")
