@@ -64,6 +64,8 @@ jobs:
   image:
     needs: [ lint, test, security ]
     runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
     permissions:
       contents: read
       packages: write          # push to GHCR
@@ -136,3 +138,86 @@ jobs:
             echo "One or more required jobs did not succeed"
             exit 1
           fi
+  deploy-dev:
+    if: github.ref == 'refs/heads/main'
+    needs: [ image, ci-passed ]
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency: { group: deploy-dev, cancel-in-progress: false }
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    env:
+      DIGEST: ${{ needs.image.outputs.digest }}
+    steps:
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Verify provenance before deploying
+        run: gh attestation verify "oci://$IMAGE@$DIGEST" --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Deploy (run the promoted image) and smoke-test
+        run: |
+          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker run -d --name app -p 8000:8000 "$IMAGE@$DIGEST"
+          for i in $(seq 1 20); do curl -fsS http://localhost:8000/health && exit 0; sleep 1; done
+          docker logs app; exit 1
+      - name: Record what was deployed
+        run: echo "Deployed \`$IMAGE@$DIGEST\` to **dev**" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    needs: [ image, deploy-dev ]
+    runs-on: ubuntu-latest
+    environment: staging
+    concurrency: { group: deploy-staging, cancel-in-progress: false }
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    env:
+      DIGEST: ${{ needs.image.outputs.digest }}
+    steps:
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Verify provenance before deploying
+        run: gh attestation verify "oci://$IMAGE@$DIGEST" --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Deploy (run the promoted image) and smoke-test
+        run: |
+          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker run -d --name app -p 8000:8000 "$IMAGE@$DIGEST"
+          for i in $(seq 1 20); do curl -fsS http://localhost:8000/health && exit 0; sleep 1; done
+          docker logs app; exit 1
+      - name: Record what was deployed
+        run: echo "Deployed \`$IMAGE@$DIGEST\` to **staging**" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    needs: [ image, deploy-staging ]
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency: { group: deploy-prod, cancel-in-progress: false }
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    env:
+      DIGEST: ${{ needs.image.outputs.digest }}
+    steps:
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Verify provenance before deploying
+        run: gh attestation verify "oci://$IMAGE@$DIGEST" --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Deploy (run the promoted image) and smoke-test
+        run: |
+          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker run -d --name app -p 8000:8000 "$IMAGE@$DIGEST"
+          for i in $(seq 1 20); do curl -fsS http://localhost:8000/health && exit 0; sleep 1; done
+          docker logs app; exit 1
+      - name: Record what was deployed
+        run: echo "Deployed \`$IMAGE@$DIGEST\` to **production**" >> "$GITHUB_STEP_SUMMARY"
