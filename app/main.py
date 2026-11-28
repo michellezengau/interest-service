@@ -9,6 +9,7 @@ app = FastAPI(title="Interest Service")
 def health() -> dict[str, str]:
     return {"status": "ok", "version": "2"}
 
+
 @app.get("/interest")
 def interest(principal: float, rate: float, years: int) -> dict:
     try:
